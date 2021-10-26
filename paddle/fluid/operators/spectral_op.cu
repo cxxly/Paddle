@@ -325,7 +325,6 @@ void exec_fft(const DeviceContext& ctx, const Tensor* X, Tensor* out,
     config_ = std::make_unique<FFTConfig>(key);
     config = config_.get();
   }
-
   // prepare cufft for execution
   PADDLE_ENFORCE_CUDA_SUCCESS(
       platform::dynload::cufftSetStream(config->plan(), ctx.stream()));
