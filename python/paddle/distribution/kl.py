@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import warnings
+
+from paddle.distribution import Categorical, Distribution, Normal, Uniform
 
 from beta import Beta
 from dirichlet import Dirichlet
-from paddle.distribution import Uniform, Normal, Categorical, Distribution
 
 _REGISTER_TABLE = {}
 _CACHE = {}
@@ -40,16 +42,37 @@ def kl_divergence(p, q):
 
 
 def _dispatch(type_p, type_q):
-    pass
+
+    matchs = []
+    for super_p, super_q in _REGISTER_TABLE:
+        if issubclass(type_p, super_p) and issubclass(type_q, super_q):
+            matchs.append((super_p, super_q))
+
+    if not matchs:
+        return NotImplemented
+
+    left_p, left_q = min(_Compare(*m) for m in matches).types
+    right_p, right_q = min(_Compare(*reversed(m)) for m in matchs).types
+
+    left_fun = _REGISTER_TABLE[left_p, left_q]
+    right_fun = _REGISTER_TABLE[right_p, right_q]
+
+    if left_fun is not right_fun:
+        warnings.warn(
+            'Ambiguous kl_divergence({}, {}). Please register_kl({}, {})'.
+            format(type_p.__name__, type_q.__name__, left_p.__name__,
+                   right_q.__name__), RuntimeWarning)
+
+    return left_fun
 
 
 @total_ordering
 class _Compare(object):
     def __init__(self, *types):
-        self._types = types
+        self.types = types
 
     def __eq__(self, other):
-        return self._types == other.types
+        return self.types == other.types
 
     def __le__(self, other):
         for x, y in zip(self.types, other.types):
@@ -67,6 +90,7 @@ def dispatch(type_p, type_q):
 
     def decorator(f):
         _REGISTER_TABLE[type_p, type_q] = f
+        _CACHE.clear()
         return f
 
     return decorator
