@@ -14,11 +14,11 @@
 
 import paddle
 
-import dirichlet
-import exponential_family
+from .dirichlet import Dirichlet
+from .exponential_family import ExponentialFamily
 
 
-class Beta(exponential_family.ExponentialFamily):
+class Beta(ExponentialFamily):
     """Beta distribution parameterized by
 
     Args:
@@ -27,10 +27,8 @@ class Beta(exponential_family.ExponentialFamily):
     """
 
     def __init__(self, alpha, beta):
-        self._alpha = alpha
-        self._beta = beta
-        self._dirichlet = dirichlet.Dirichlet(paddle.stack([alpha, beta], -1))
-
+        print(alpha, beta)
+        self._dirichlet = Dirichlet(paddle.stack([alpha, beta], -1))
         super(Beta, self).__init__(self._dirichlet._batch_shape,
                                    self._dirichlet._event_shape)
 
@@ -91,3 +89,11 @@ class Beta(exponential_family.ExponentialFamily):
             sampled data
         """
         return self._dirichlet.sample(shape).select(-1, 0)
+
+    def entropy(self):
+        """entropy of dirichlet distribution
+
+        Returns:
+            Tensor: [description]
+        """
+        return self._dirichlet.entropy()

@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from paddle import distribution
+from .distribution import Distribution
 
 
-class ExponentialFamily(distribution.Distribution):
+class ExponentialFamily(Distribution):
     """[summary]
 
     Args:
