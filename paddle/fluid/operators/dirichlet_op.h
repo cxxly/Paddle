@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #pragma once
+#include <cmath>
 #include <iostream>
 #include <random>
 
@@ -21,6 +22,15 @@
 
 // ROCM hcc doesn't work well with using std:: in kernel functions
 #if defined(__CUDA_ARCH__)
+#define compat_exp exp
+#define compat_ceil ceil
+#define compat_floor floor
+#define compat_log log
+#define compat_pow pow
+#define compat_sqrt sqrt
+#define compat_tan tan
+#define compat_abs abs
+#define compat_log1p log1p
 #else
 #define compat_exp std::exp
 #define compat_ceil std::ceil
@@ -107,8 +117,8 @@ sample_gamma(scalar_t alpha,
 }
 
 template <typename T, typename uniform_sampler_t, typename normal_sampler_t>
-struct GammaSampler {
-  GammaSampler(const T* alpha, T* gamma,
+struct GammaFunctor {
+  GammaFunctor(const T* alpha, T* gamma,
                BaseSampler<T, uniform_sampler_t> uniform,
                BaseSampler<T, normal_sampler_t> normal)
       : alpha_(alpha), gamma_(gamma), uniform_(uniform), normal_(normal) {}

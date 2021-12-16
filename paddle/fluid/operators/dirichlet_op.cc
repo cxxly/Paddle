@@ -44,7 +44,7 @@ struct DirichletSampler<platform::CPUDeviceContext, T> {
     framework::Tensor gamma;
     gamma.mutable_data<T>(alpha->dims(), dev_ctx.GetPlace());
 
-    GammaSampler<T, decltype(uniform), decltype(normal)> gamma_sampler(
+    GammaFunctor<T, decltype(uniform), decltype(normal)> gamma_sampler(
         alpha->data<T>(), gamma.data<T>(), standard_uniform, standard_normal);
 
     platform::ForRange<platform::CPUDeviceContext> for_range(dev_ctx,
