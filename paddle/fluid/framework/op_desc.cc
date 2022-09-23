@@ -24,6 +24,7 @@ limitations under the License. */
 #include "paddle/fluid/framework/shape_inference.h"
 #include "paddle/fluid/framework/var_type_inference.h"
 #include "paddle/fluid/operators/ops_extra_info.h"
+#include "paddle/phi/common/complex.h"
 #include "paddle/utils/blank.h"
 
 namespace paddle {
@@ -679,10 +680,12 @@ void OpDesc::SetAttr(const std::string &name, const Attribute &v) {
   if (attr_type == proto::AttrType::INTS &&
       PADDLE_GET_CONST(std::vector<int>, v).size() == 0u) {
     // Find current attr via attr name and set the correct attribute value
-    auto attr_type =
-        is_runtime_attr
-            ? static_cast<proto::AttrType>(extra_attr_iter->second.index() - 1)
-            : GetProtoAttr(name).type();
+    if (is_runtime_attr) {
+      attr_type =
+          static_cast<proto::AttrType>(extra_attr_iter->second.index() - 1);
+    } else if (HasProtoAttr(name)) {
+      attr_type = GetProtoAttr(name).type();
+    }
     switch (attr_type) {
       case proto::AttrType::BOOLEANS: {
         VLOG(11) << "SetAttr: " << Type() << ", " << name
@@ -751,9 +754,40 @@ void OpDesc::SetAttr(const std::string &name, const Attribute &v) {
     }
   }
 
+  // TODO(chenfeiyu) In cases where an operator is used as the backward of
+  // another operator attributes are added directly via SetAttr (e.g.
+  // exponential) the block is added to ensure that an operator gets what they
+  // want if (HasProtoAttr(name) &&
+  //       GetProtoAttr(name).type() == proto::AttrType::SCALAR) {
+  //     attrs_ptr->operator[](name) = static_cast<bool>(PADDLE_GET_CONST(int,
+  //     v)); need_update_ = true; return;
+  //   }
+
   attrs_ptr->operator[](name) = v;
+  VLOG(10) << "attr name: " << name
+           << " , type index: " << this->attrs_[name].index();
   need_update_ = true;
 }
+
+template <typename T>
+void OpDesc::SetScalarAttr(const std::string &name, T var) {
+  this->attrs_[name] = paddle::experimental::Scalar(var);
+  VLOG(10) << "attr name: " << name
+           << " , type index: " << this->attrs_[name].index()
+           << ", value: " << var;
+  need_update_ = true;
+}
+template void OpDesc::SetScalarAttr<bool>(const std::string &name, bool var);
+template void OpDesc::SetScalarAttr<int>(const std::string &name, int var);
+template void OpDesc::SetScalarAttr<int64_t>(const std::string &name,
+                                             int64_t var);
+template void OpDesc::SetScalarAttr<float>(const std::string &name, float var);
+template void OpDesc::SetScalarAttr<double>(const std::string &name,
+                                            double var);
+template void OpDesc::SetScalarAttr<std::complex<float>>(
+    const std::string &name, std::complex<float> var);
+template void OpDesc::SetScalarAttr<std::complex<double>>(
+    const std::string &name, std::complex<double> var);
 
 void OpDesc::SetVarAttr(const std::string &name, VarDesc *var) {
   this->attrs_[name] = var;
@@ -911,6 +945,57 @@ void OpDesc::RenameInput(const std::string &old_name,
   need_update_ = true;
 }
 
+proto::Scalar make_scalar_proto(const paddle::experimental::Scalar &v) {
+  proto::Scalar s;
+  auto data_type = v.dtype();
+  switch (data_type) {
+    case experimental::DataType::BOOL:
+      s.set_b(v.to<bool>());
+      s.set_type(proto::Scalar_Type_BOOLEAN);
+      break;
+    case experimental::DataType::INT8:
+    case experimental::DataType::UINT8:
+    case experimental::DataType::INT16:
+    case experimental::DataType::UINT16:
+    case experimental::DataType::INT32:
+    case experimental::DataType::UINT32:
+    case experimental::DataType::INT64:
+    case experimental::DataType::UINT64:
+      s.set_i(v.to<int64_t>());
+      s.set_type(proto::Scalar_Type_LONG);
+      break;
+    case experimental::DataType::FLOAT16:
+    case experimental::DataType::BFLOAT16:
+    case experimental::DataType::FLOAT32:
+    case experimental::DataType::FLOAT64:
+      s.set_r(v.to<double>());
+      s.set_type(proto::Scalar_Type_FLOAT64);
+      break;
+    case experimental::DataType::COMPLEX64:
+    case experimental::DataType::COMPLEX128: {
+      auto value = v.to<phi::dtype::complex<double>>();
+      auto *complex = s.mutable_c();
+      complex->set_r(value.real);
+      complex->set_i(value.imag);
+      s.set_type(proto::Scalar_Type_COMPLEX128);
+      break;
+    }
+    case experimental::DataType::UNDEFINED:
+    case experimental::DataType::PSTRING:
+    case experimental::DataType::NUM_DATA_TYPES:
+      PADDLE_THROW(
+          phi::errors::InvalidArgument("Expected scalar of type boolean, "
+                                       "integer, floating point or complex."));
+      break;
+    default:
+      PADDLE_THROW(
+          phi::errors::InvalidArgument("Expected scalar of type boolean, "
+                                       "integer, floating point or complex."));
+      break;
+  }
+  return s;
+}
+
 struct SetAttrDescVisitor {
   explicit SetAttrDescVisitor(proto::OpDesc::Attr *attr) : attr_(attr) {}
   mutable proto::OpDesc::Attr *attr_;
@@ -918,6 +1003,11 @@ struct SetAttrDescVisitor {
   void operator()(float v) const { attr_->set_f(v); }
   void operator()(double v) const { attr_->set_float64(v); }
   void operator()(const std::string &v) const { attr_->set_s(v); }
+  void operator()(const paddle::experimental::Scalar &v) const {
+    auto *s = new proto::Scalar;
+    *s = make_scalar_proto(v);
+    attr_->set_allocated_scalar(s);
+  }
 
   // Please refer to https://github.com/PaddlePaddle/Paddle/issues/7162
   template <class T,
@@ -969,6 +1059,15 @@ struct SetAttrDescVisitor {
 
   void operator()(const std::vector<double> &v) const {
     VectorToRepeated(v, attr_->mutable_float64s());
+  }
+
+  void operator()(const std::vector<paddle::experimental::Scalar> &v) const {
+    std::vector<proto::Scalar> scalars;
+    scalars.reserve(v.size());
+    for (const auto &item : v) {
+      scalars.emplace_back(make_scalar_proto(item));
+    }
+    VectorToRepeated(scalars, attr_->mutable_scalars());
   }
 
   void operator()(paddle::blank) const {

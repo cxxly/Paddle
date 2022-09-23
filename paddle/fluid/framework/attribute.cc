@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License. */
 
 #include "paddle/fluid/framework/attribute.h"
+#include "paddle/phi/common/complex.h"
 #include "paddle/utils/blank.h"
 
 namespace paddle {
@@ -50,6 +51,10 @@ paddle::any GetAttrValue(const Attribute& attr) {
       return PADDLE_GET_CONST(BlockDesc*, attr);
     case proto::AttrType::BLOCKS:
       return PADDLE_GET_CONST(std::vector<BlockDesc*>, attr);
+    case proto::AttrType::SCALAR:
+      return PADDLE_GET_CONST(paddle::experimental::Scalar, attr);
+    case proto::AttrType::SCALARS:
+      return PADDLE_GET_CONST(std::vector<paddle::experimental::Scalar>, attr);
     default:
       PADDLE_THROW(platform::errors::Unimplemented(
           "Unsupported Attribute value type `%s` for phi.",
@@ -118,6 +123,18 @@ Attribute GetAttrValue(const proto::OpDesc::Attr& attr_desc) {
       return val;
     }
 
+    case proto::AttrType::SCALAR: {
+      return make_scalar_from_proto(attr_desc.scalar());
+    }
+
+    case proto::AttrType::SCALARS: {
+      std::vector<paddle::experimental::Scalar> val(attr_desc.scalars_size());
+      for (int i = 0; i < attr_desc.scalars_size(); ++i) {
+        val[i] = make_scalar_from_proto(attr_desc.scalars(i));
+      }
+      return val;
+    }
+
     default:
       PADDLE_THROW(platform::errors::Unavailable(
           "Unsupported attribute type %d.", attr_desc.type()));
@@ -145,6 +162,28 @@ Attribute GetAttrValue(const proto::VarDesc::Attr& attr_desc) {
           "Unsupported attribute type %d.", attr_desc.type()));
   }
   return paddle::blank();
+}
+
+paddle::experimental::Scalar make_scalar_from_proto(const proto::Scalar& v) {
+  auto data_type = v.type();
+  switch (data_type) {
+    case proto::Scalar_Type_BOOLEAN:
+      return paddle::experimental::Scalar(v.b());
+    case proto::Scalar_Type_LONG:
+      return paddle::experimental::Scalar(v.i());
+    case proto::Scalar_Type_FLOAT64:
+      return paddle::experimental::Scalar(v.r());
+    case proto::Scalar_Type_COMPLEX128: {
+      phi::dtype::complex<double> value(v.c().r(), v.c().i());
+      return paddle::experimental::Scalar(value);
+    }
+    default:
+      PADDLE_THROW(
+          phi::errors::InvalidArgument("Expected scalar of type boolean, "
+                                       "integer, floating point or complex."));
+      break;
+  }
+  return paddle::experimental::Scalar();
 }
 
 }  // namespace framework

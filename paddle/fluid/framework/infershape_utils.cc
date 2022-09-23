@@ -597,6 +597,9 @@ CompatInferMetaContext BuildInferMetaContext(InferShapeContext* ctx,
               infer_meta_context.EmplaceBackAttr(
                   phi::Scalar(PADDLE_GET_CONST(bool, attr)));
               break;
+            case framework::proto::AttrType::SCALAR:
+              infer_meta_context.EmplaceBackAttr(phi::Scalar(
+                  PADDLE_GET_CONST(paddle::experimental::Scalar, attr)));
             default:
               PADDLE_THROW(platform::errors::Unimplemented(
                   "Unsupported cast op attribute `%s` to Scalar when construct "
@@ -735,6 +738,12 @@ CompatInferMetaContext BuildInferMetaContext(InferShapeContext* ctx,
               for (const auto& val : vec) {
                 scalar_list.emplace_back(val);
               }
+              infer_meta_context.EmplaceBackAttr(std::move(scalar_list));
+            } break;
+            case proto::AttrType::SCALARS: {
+              const auto& vec = PADDLE_GET_CONST(
+                  std::vector<paddle::experimental::Scalar>, attr);
+              std::vector<phi::Scalar> scalar_list{vec.begin(), vec.end()};
               infer_meta_context.EmplaceBackAttr(std::move(scalar_list));
             } break;
             default:

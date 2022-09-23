@@ -14,6 +14,7 @@ limitations under the License. */
 
 #include "paddle/fluid/framework/infershape_utils.h"
 #include "paddle/fluid/framework/op_registry.h"
+#include "paddle/phi/common/scalar.h"
 #include "paddle/phi/core/infermeta_utils.h"
 #include "paddle/phi/infermeta/backward.h"
 #include "paddle/phi/kernels/funcs/math_function.h"
@@ -29,6 +30,8 @@ class FillAnyOpMaker : public framework::OpProtoAndCheckerMaker {
     AddAttr<float>("value_float", "The float var to fill in Tensor")
         .SetDefault(0);
     AddAttr<int>("value_int", "The int var to fill in Tensor").SetDefault(0);
+    AddAttr<paddle::experimental::Scalar>("value", "generic value")
+        .SetDefault(0);
     AddComment(R"DOC(Fill operator with backward;
                 Fill an tensor with `value`.
                 )DOC");

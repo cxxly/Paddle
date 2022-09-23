@@ -927,10 +927,14 @@ static bool CollectGradInformationFromOpInfo(
     bwd_info->SetGenerateForwardOnly(true);
     return false;
   }
-
+  VLOG(0) << "SSS1: " << op_type;
+  for (auto& __pair : default_attrs) {
+    VLOG(0) << __pair.first << __pair.second.index();
+  }
   std::shared_ptr<paddle::imperative::GradOpNode> grad_node =
       op_info.dygraph_grad_op_maker_(
           op_type, ins, outs, attrs, default_attrs, {});
+  VLOG(0) << "SSS2: " << op_type;
 
   if (!grad_node) {
     VLOG(6) << "Got nullptr GradOpNode for " << op_type
@@ -3180,6 +3184,8 @@ static void DygraphCodeGeneration(const std::string& output_dir,
 
     op_info_map_need_gen.emplace(pair);
   }
+
+  VLOG(0) << "Done for stage 1";
 
   int each_cc_file_api_size = op_info_map_need_gen.size() / split_count;
   if (op_info_map_need_gen.size() % split_count != 0) {

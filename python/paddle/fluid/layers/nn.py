@@ -12204,6 +12204,8 @@ def scale(x, scale=1.0, bias=0.0, bias_after_scale=True, act=None, name=None):
             'int32',
             'int64',
             'uint8',
+            'complex64',
+            'complex128',
         ],
         "scale",
     )

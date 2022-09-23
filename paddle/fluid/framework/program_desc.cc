@@ -20,6 +20,7 @@ extern "C" {
 
 #include <algorithm>
 #include "paddle/fluid/framework/feed_fetch_type.h"
+#include "paddle/fluid/framework/program_converter.h"
 #include "paddle/fluid/framework/version.h"
 
 namespace paddle {
@@ -142,6 +143,7 @@ ProgramDesc::ProgramDesc(const std::string &binary_str) {
                     platform::errors::InvalidArgument(
                         "Failed to parse program_desc from binary string."));
   InitFromProto();
+  scalar::ConvertProgram(this);
 }
 
 void ProgramDesc::InitFromProto() {

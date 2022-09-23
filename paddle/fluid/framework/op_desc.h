@@ -105,6 +105,21 @@ class OpDesc {
     SetAttr(name, value);
   }
 
+  // NOTE(chenfeiyu): Scalar is a generic numeric type
+  // To bind this function to python without specifying the actual requested
+  // type, higher precision ones among some type category is used
+  // to avoid narrowing conversion, because Scalar is convertible from both
+  // float and double. With pybind's overload resolution mechanism, float
+  template <typename T>
+  void SetScalarAttr(const std::string &name, T var);
+
+  template <typename T>
+  void SetScalarsAttr(const std::string &name, const std::vector<T> &var) {
+    this->attrs_[name] =
+        std::vector<paddle::experimental::Scalar>{var.begin(), var.end()};
+    need_update_ = true;
+  }
+
   void SetVarAttr(const std::string &name, VarDesc *var);
 
   void SetVarsAttr(const std::string &name, std::vector<VarDesc *> vars);

@@ -762,6 +762,8 @@ def assign(input, output=None):
                     'int64',
                     'uint8',
                     'bool',
+                    'complex64',
+                    'complex128',
                 ],
                 'assign',
                 '(When the type of input in assign is Variable.)',
@@ -780,33 +782,36 @@ def assign(input, output=None):
                 "Required type(input) numpy.ndarray, but found `list(Variable)` in input."
             )
         dtype = convert_np_dtype_to_dtype_(input.dtype)
-        if dtype == VarDesc.VarType.FP64:
-            # Setting FP64 numpy data is not supported in Paddle, so we
-            # use FP32 here
-            warnings.warn(
-                "paddle.assign doesn't support float64 input now due "
-                "to current platform protobuf data limitation, we convert "
-                "it to float32"
-            )
-            dtype = VarDesc.VarType.FP32
-        if dtype == VarDesc.VarType.BOOL:
-            value_name = "bool_values"
-            values = [int(v) for v in input.flat]
-        elif dtype == VarDesc.VarType.FP32:
-            value_name = "fp32_values"
-            values = [float(v) for v in input.flat]
-        elif dtype == VarDesc.VarType.INT32:
-            value_name = "int32_values"
-            values = [int(v) for v in input.flat]
-        elif dtype == VarDesc.VarType.INT64:
-            value_name = "int64_values"
-            values = [int(v) for v in input.flat]
-        else:
-            raise TypeError(
-                "When the type of 'input' in assign is numpy.ndarray, "
-                "the data type of 'input' must be bool, float32, int32 or int64, but "
-                "received %s." % convert_dtype(dtype)
-            )
+        # if dtype == VarDesc.VarType.FP64:
+        #     # Setting FP64 numpy data is not supported in Paddle, so we
+        #     # use FP32 here
+        #     warnings.warn(
+        #         "paddle.assign doesn't support float64 input now due "
+        #         "to current platform protobuf data limitation, we convert "
+        #         "it to float32"
+        #     )
+        #     dtype = VarDesc.VarType.FP32
+        # if dtype == VarDesc.VarType.BOOL:
+        #     value_name = "bool_values"
+        #     values = [int(v) for v in input.flat]
+        # elif dtype == VarDesc.VarType.FP32:
+        #     value_name = "fp32_values"
+        #     values = [float(v) for v in input.flat]
+        # elif dtype == VarDesc.VarType.INT32:
+        #     value_name = "int32_values"
+        #     values = [int(v) for v in input.flat]
+        # elif dtype == VarDesc.VarType.INT64:
+        #     value_name = "int64_values"
+        #     values = [int(v) for v in input.flat]
+        # else:
+        #     raise TypeError(
+        #         "When the type of 'input' in assign is numpy.ndarray, "
+        #         "the data type of 'input' must be bool, float32, int32 or int64, but "
+        #         "received %s." % convert_dtype(dtype)
+        #     )
+        value_name = "values"
+        # convert it to a python list to avoid using numpy scalar types here
+        values = input.ravel().tolist()
         if input.size > 1024 * 1024:
             raise ValueError(
                 "The size of input is too big. Please consider "
@@ -906,12 +911,13 @@ def fill_constant(shape, dtype, value, force_cpu=False, out=None, name=None):
     attrs = {'force_cpu': force_cpu}
     dtype = convert_dtype(dtype)
     if not isinstance(value, Variable):
-        if dtype in ['uint8', 'int16', 'int32', 'int64']:
-            attrs['str_value'] = str(int(value))
-            attrs['value'] = int(value)
-        else:
-            attrs['str_value'] = str(float(value))
-            attrs['value'] = float(value)
+        # if dtype in ['uint8', 'int16', 'int32', 'int64']:
+        #     attrs['str_value'] = str(int(value))
+        #     attrs['value'] = int(value)
+        # else:
+        #     attrs['str_value'] = str(float(value))
+        #     attrs['value'] = float(value)
+        attrs["value"] = value
 
     if in_dygraph_mode():
         place = _current_expected_place()
@@ -924,13 +930,15 @@ def fill_constant(shape, dtype, value, force_cpu=False, out=None, name=None):
             dtype = convert_np_dtype_to_dtype_(dtype)
 
         if out is None:
-            out = _C_ops.full(shape, float(value), dtype, place)
+            out = _C_ops.full(shape, value, dtype, place)
+            # out = _C_ops.full(shape, float(value), dtype, place)
             out.stop_gradient = True
             return out
 
         if out is not None:
             # final state mode is support out is not None.
-            _C_ops.full_(out, shape, float(value), dtype, place)
+            _C_ops.full_(out, shape, value, dtype, place)
+            # _C_ops.full_(out, shape, float(value), dtype, place)
             out.stop_gradient = True
             return out
 
@@ -939,22 +947,23 @@ def fill_constant(shape, dtype, value, force_cpu=False, out=None, name=None):
         if out is None:
             out = _varbase_creator(dtype=dtype)
 
-        if isinstance(value, Variable):
-            if dtype in ['uint8', 'int16', 'int32', 'int64']:
-                attrs['str_value'] = str(int(value.numpy().item(0)))
-            else:
-                attrs['str_value'] = str(float(value.numpy().item(0)))
+        # if isinstance(value, Variable):
+        #     if dtype in ['uint8', 'int16', 'int32', 'int64']:
+        #         attrs['str_value'] = str(int(value.numpy().item(0)))
+        #     else:
+        #         attrs['str_value'] = str(float(value.numpy().item(0)))
 
         _legacy_C_ops.fill_constant(
             out,
             'value',
-            float(value),
+            # float(value),
+            value,
             'force_cpu',
             force_cpu,
             'dtype',
             out.dtype,
-            'str_value',
-            attrs['str_value'],
+            # 'str_value',
+            # attrs['str_value'],
             'shape',
             shape,
         )
