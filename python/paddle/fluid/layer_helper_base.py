@@ -393,13 +393,17 @@ class LayerHelperBase:
                     and dtype != core.VarDesc.VarType.FP64
                     and dtype != core.VarDesc.VarType.FP16
                     and dtype != core.VarDesc.VarType.BF16
+                    and dtype != core.VarDesc.VarType.COMPLEX64
+                    and dtype != core.VarDesc.VarType.COMPLEX128
                 ):
                     raise TypeError(
                         "Can not create parameter with default initializer when dtype is not float type. Set default_initializer to fit the parameter dtype!"
                     )
             else:
                 if not (
-                    dtype.startswith("float") or dtype in ["double", "uint16"]
+                    dtype.startswith("float")
+                    or dtype.startswith("complex")
+                    or dtype in ["double", "uint16"]
                 ):
                     raise TypeError(
                         "Can not create parameter with default initializer when dtype is not float type. Set default_initializer to fit the parameter dtype!"

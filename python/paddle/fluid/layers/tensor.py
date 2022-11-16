@@ -181,6 +181,8 @@ def create_parameter(
             'int32',
             'int64',
             'uint8',
+            'complex64',
+            'complex128',
         ],
         'create_parameter',
     )
