@@ -22,6 +22,7 @@ limitations under the License. */
 
 #include "paddle/fluid/framework/op_version_proto.h"
 #include "paddle/fluid/platform/enforce.h"
+#include "paddle/phi/common/scalar.h"
 #include "paddle/phi/core/macros.h"
 #include "paddle/utils/none.h"
 
@@ -33,19 +34,22 @@ namespace pb {
 class OpVersionMap;
 }  // namespace pb
 
-using OpAttrVariantT =
-    paddle::variant<bool,                     /* AttrType::BOOL */
-                    float,                    /* AttrType::FLOAT */
-                    int32_t,                  /* AttrType::INT */
-                    int64_t,                  /* AttrType::LONG*/
-                    std::string,              /* AttrType::STRING */
-                    std::vector<bool>,        /* AttrType::BOOLS */
-                    std::vector<float>,       /* AttrType::FLOATS */
-                    std::vector<int32_t>,     /* AttrType::INTS */
-                    std::vector<int64_t>,     /* AttrType::LONGS */
-                    std::vector<std::string>, /* AttrType::STRINGS */
-                    paddle::none_t            /* None */
-                    >;
+using OpAttrVariantT = paddle::variant<
+    bool,                         /* AttrType::BOOL */
+    float,                        /* AttrType::FLOAT */
+    int32_t,                      /* AttrType::INT */
+    int64_t,                      /* AttrType::LONG*/
+    std::string,                  /* AttrType::STRING */
+    std::vector<bool>,            /* AttrType::BOOLS */
+    std::vector<float>,           /* AttrType::FLOATS */
+    std::vector<int32_t>,         /* AttrType::INTS */
+    std::vector<int64_t>,         /* AttrType::LONGS */
+    std::vector<std::string>,     /* AttrType::STRINGS */
+    paddle::none_t,               /* None */
+    std::vector<double>,          /* AttrType::FLOAT64S */
+    double,                       /* AttrType::FLOAT64 */
+    paddle::experimental::Scalar, /* AttrType::SCALAR */
+    std::vector<paddle::experimental::Scalar> /* AttrType::SCALARS */>;
 
 struct OpUpdateInfo {
   virtual ~OpUpdateInfo() = default;

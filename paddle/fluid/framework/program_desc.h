@@ -23,6 +23,7 @@ limitations under the License. */
 #include "paddle/fluid/framework/block_desc.h"
 #include "paddle/fluid/framework/proto_desc.h"
 #include "paddle/fluid/platform/macros.h"
+#include "paddle/utils/optional.h"
 
 namespace paddle {
 namespace framework {

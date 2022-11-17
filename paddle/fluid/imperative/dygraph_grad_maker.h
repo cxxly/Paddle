@@ -314,6 +314,16 @@ class TracedGradOp {
     op_->SetAttr(name, v);
   }
 
+  template <typename T>
+  void SetScalarAttr(const std::string& name, T v) {
+    op_->SetScalarAttr(name, v);
+  }
+
+  template <typename T>
+  void SetScalarsAttr(const std::string& name, const std::vector<T>& v) {
+    op_->SetScalarsAttr(name, v);
+  }
+
   bool HasAttr(const std::string& name) const { return op_->HasAttr(name); }
 
   const framework::Attribute& GetAttr(const std::string& name) const {

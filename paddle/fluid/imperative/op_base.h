@@ -26,6 +26,7 @@
 #include "paddle/fluid/imperative/type_defs.h"
 #include "paddle/fluid/imperative/variable_wrapper.h"
 #include "paddle/fluid/platform/place.h"
+#include "paddle/phi/common/scalar.h"
 
 namespace paddle {
 namespace imperative {
@@ -114,6 +115,22 @@ class OpBase {
 
   void SetAttr(const std::string& name, const framework::Attribute& v) {
     attrs_[name] = v;
+  }
+
+  // NOTE(chenfeiyu): Scalar is a generic numeric type
+  // To bind this function to python without specifying the actual requested
+  // type, higher precision ones among some type category is used
+  // to avoid narrowing conversion, because Scalar is convertible from both
+  // float and double. With pybind's overload resolution mechanism, float
+  template <typename T>
+  void SetScalarAttr(const std::string& name, T var) {
+    this->attrs_[name] = paddle::experimental::Scalar(var);
+  }
+
+  template <typename T>
+  void SetScalarsAttr(const std::string& name, const std::vector<T>& var) {
+    this->attrs_[name] =
+        std::vector<paddle::experimental::Scalar>{var.begin(), var.end()};
   }
 
   void SetBlockAttr(const std::string& name, framework::BlockDesc* block) {

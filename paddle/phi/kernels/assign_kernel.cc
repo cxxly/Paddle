@@ -15,6 +15,7 @@
 #include "paddle/phi/kernels/assign_kernel.h"
 
 #include "paddle/fluid/framework/tensor_util.h"
+#include "paddle/phi/common/complex.h"
 #include "paddle/phi/core/kernel_registry.h"
 #include "paddle/phi/core/tensor_utils.h"
 #include "paddle/utils/optional.h"
@@ -132,7 +133,10 @@ PD_REGISTER_KERNEL(assign_value,
                    bool,
                    int,
                    float,
-                   int64_t) {}
+                   int64_t,
+                   double,
+                   phi::dtype::complex<float>,
+                   phi::dtype::complex<double>) {}
 
 #if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
 PD_REGISTER_GENERAL_KERNEL(
@@ -156,7 +160,10 @@ PD_REGISTER_KERNEL(assign_value,
                    bool,
                    int,
                    float,
-                   int64_t) {}
+                   int64_t,
+                   double,
+                   phi::dtype::complex<float>,
+                   phi::dtype::complex<double>) {}
 #endif
 
 #ifdef PADDLE_WITH_XPU
@@ -181,5 +188,8 @@ PD_REGISTER_KERNEL(assign_value,
                    bool,
                    int,
                    float,
-                   int64_t) {}
+                   int64_t,
+                   double,
+                   phi::dtype::complex<float>,
+                   phi::dtype::complex<double>) {}
 #endif

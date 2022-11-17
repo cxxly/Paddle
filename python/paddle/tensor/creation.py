@@ -37,7 +37,6 @@ from ..fluid.framework import (
     _in_legacy_dygraph,
     _in_eager_without_dygraph_check,
 )
-import warnings
 
 __all__ = []
 
@@ -594,13 +593,33 @@ def full_like(x, fill_value, dtype=None, name=None):
     check_variable_and_dtype(
         x,
         'x',
-        ['bool', 'float16', 'float32', 'float64', 'int16', 'int32', 'int64'],
+        [
+            'bool',
+            'float16',
+            'float32',
+            'float64',
+            'int16',
+            'int32',
+            'int64',
+            'complex64',
+            'complex128',
+        ],
         'full_like',
     )
     check_dtype(
         dtype,
         'dtype',
-        ['bool', 'float16', 'float32', 'float64', 'int16', 'int32', 'int64'],
+        [
+            'bool',
+            'float16',
+            'float32',
+            'float64',
+            'int16',
+            'int32',
+            'int64',
+            'complex64',
+            'complex128',
+        ],
         'full_like/zeros_like/ones_like',
     )
     out = helper.create_variable_for_type_inference(dtype=dtype)
@@ -1764,6 +1783,8 @@ def assign(x, output=None):
                     'int64',
                     'uint8',
                     'bool',
+                    'complex64',
+                    'complex128',
                 ],
                 'assign',
                 '(When the type of input in assign is Variable.)',
@@ -1807,33 +1828,36 @@ def assign(x, output=None):
             )
 
         dtype = convert_np_dtype_to_dtype_(input.dtype)
-        if dtype == core.VarDesc.VarType.FP64:
-            # Setting FP64 numpy data is not supported in Paddle, so we
-            # use FP32 here
-            warnings.warn(
-                "paddle.assign doesn't support float64 input now due "
-                "to current platform protobuf data limitation, we convert "
-                "it to float32"
-            )
-            dtype = core.VarDesc.VarType.FP32
-        if dtype == core.VarDesc.VarType.BOOL:
-            value_name = "bool_values"
-            values = [int(v) for v in input.flat]
-        elif dtype == core.VarDesc.VarType.FP32:
-            value_name = "fp32_values"
-            values = [float(v) for v in input.flat]
-        elif dtype == core.VarDesc.VarType.INT32:
-            value_name = "int32_values"
-            values = [int(v) for v in input.flat]
-        elif dtype == core.VarDesc.VarType.INT64:
-            value_name = "int64_values"
-            values = [int(v) for v in input.flat]
-        else:
-            raise TypeError(
-                "When the type of 'input' in assign is numpy.ndarray, "
-                "the data type of 'input' must be bool, float32, int32 or int64, but "
-                "received %s." % convert_dtype(dtype)
-            )
+        # if dtype == core.VarDesc.VarType.FP64:
+        #     # Setting FP64 numpy data is not supported in Paddle, so we
+        #     # use FP32 here
+        #     warnings.warn(
+        #         "paddle.assign doesn't support float64 input now due "
+        #         "to current platform protobuf data limitation, we convert "
+        #         "it to float32"
+        #     )
+        #     dtype = core.VarDesc.VarType.FP32
+        # if dtype == core.VarDesc.VarType.BOOL:
+        #     value_name = "bool_values"
+        #     values = [int(v) for v in input.flat]
+        # elif dtype == core.VarDesc.VarType.FP32:
+        #     value_name = "fp32_values"
+        #     values = [float(v) for v in input.flat]
+        # elif dtype == core.VarDesc.VarType.INT32:
+        #     value_name = "int32_values"
+        #     values = [int(v) for v in input.flat]
+        # elif dtype == core.VarDesc.VarType.INT64:
+        #     value_name = "int64_values"
+        #     values = [int(v) for v in input.flat]
+        # else:
+        #     raise TypeError(
+        #         "When the type of 'input' in assign is numpy.ndarray, "
+        #         "the data type of 'input' must be bool, float32, int32 or int64, but "
+        #         "received %s." % convert_dtype(dtype)
+        #     )
+        value_name = "values"
+        # convert it to a python list to avoid using numpy scalar types here
+        values = input.ravel().tolist()
         if input.size > 1024 * 1024:
             raise ValueError(
                 "The size of input is too big. Please consider "

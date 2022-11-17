@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License. */
 #include "paddle/fluid/pybind/protobuf.h"
 
+#include <complex>
 #include <deque>
 #include <iostream>
 #include <string>
@@ -22,11 +23,14 @@ limitations under the License. */
 #include "paddle/fluid/framework/block_desc.h"
 #include "paddle/fluid/framework/ir/graph_helper.h"
 #include "paddle/fluid/framework/op_desc.h"
+#include "paddle/fluid/framework/op_version_registry.h"
+#include "paddle/fluid/framework/program_converter.h"
 #include "paddle/fluid/framework/program_desc.h"
 #include "paddle/fluid/framework/var_desc.h"
 #include "paddle/fluid/framework/version.h"
 #include "paddle/fluid/jit/property.h"
 #include "paddle/fluid/pybind/pybind_variant_caster.h"
+#include "paddle/phi/common/scalar.h"
 
 namespace py = pybind11;
 
@@ -47,6 +51,23 @@ static pybind11::bytes SerializeMessage(
     T &self) {  // NOLINT due to pybind11 convention.
   // Check IsInitialized in Python
   std::string retv;
+  PADDLE_ENFORCE_EQ(self.Proto()->SerializePartialToString(&retv),
+                    true,
+                    platform::errors::InvalidArgument(
+                        "Failed to serialize input Desc to string."));
+  return retv;
+}
+
+template <>
+pybind11::bytes SerializeMessage<pd::ProgramDesc>(
+    pd::ProgramDesc &self) {  // NOLINT due to pybind11 convention.
+  // Check IsInitialized in Python
+  std::string retv;
+  // NOTE(chenfeiyu): save versioned ops' version id by default
+  framework::compatible::pb::OpVersionMap op_version_map(self.OpVersionMap());
+  paddle::framework::compatible::SaveOpVersions(
+      framework::compatible::get_op_version_map(), &op_version_map);
+  pd::no_scalar::ConvertProgram(&self);
   PADDLE_ENFORCE_EQ(self.Proto()->SerializePartialToString(&retv),
                     true,
                     platform::errors::InvalidArgument(
@@ -287,7 +308,7 @@ void BindOpDesc(pybind11::module *m) {
       .value("LONGS", pd::proto::AttrType::LONGS)
       .value("FLOAT", pd::proto::AttrType::FLOAT)
       .value("FLOATS", pd::proto::AttrType::FLOATS)
-      //  .value("FLOAT64", pd::proto::AttrType::FLOAT64)
+      .value("FLOAT64", pd::proto::AttrType::FLOAT64)
       .value("FLOAT64S", pd::proto::AttrType::FLOAT64S)
       .value("STRING", pd::proto::AttrType::STRING)
       .value("STRINGS", pd::proto::AttrType::STRINGS)
@@ -296,7 +317,9 @@ void BindOpDesc(pybind11::module *m) {
       .value("BLOCK", pd::proto::AttrType::BLOCK)
       .value("BLOCKS", pd::proto::AttrType::BLOCKS)
       .value("VAR", pd::proto::AttrType::VAR)
-      .value("VARS", pd::proto::AttrType::VARS);
+      .value("VARS", pd::proto::AttrType::VARS)
+      .value("SCALAR", pd::proto::AttrType::SCALAR)
+      .value("SCALARS", pd::proto::AttrType::SCALARS);
 
   pybind11::class_<pd::OpDesc> op_desc(*m, "OpDesc", "");
   op_desc
@@ -368,7 +391,7 @@ void BindOpDesc(pybind11::module *m) {
       .def("_set_int32_attr", &pd::OpDesc::SetPlainAttr<int>)
       .def("_set_int64_attr", &pd::OpDesc::SetPlainAttr<int64_t>)
       .def("_set_float32_attr", &pd::OpDesc::SetPlainAttr<float>)
-      //  .def("_set_float64_attr", &pd::OpDesc::SetPlainAttr<double>)
+      .def("_set_float64_attr", &pd::OpDesc::SetPlainAttr<double>)
       .def("_set_str_attr", &pd::OpDesc::SetPlainAttr<std::string>)
 
       .def("_set_bools_attr", &pd::OpDesc::SetPlainAttr<std::vector<bool>>)
@@ -378,6 +401,20 @@ void BindOpDesc(pybind11::module *m) {
       .def("_set_float64s_attr", &pd::OpDesc::SetPlainAttr<std::vector<double>>)
       .def("_set_strs_attr",
            &pd::OpDesc::SetPlainAttr<std::vector<std::string>>)
+
+      // for Scalar attributes
+      .def("_set_scalar_attr_from_bool", &pd::OpDesc::SetScalarAttr<bool>)
+      .def("_set_scalar_attr_from_int64", &pd::OpDesc::SetScalarAttr<int64_t>)
+      .def("_set_scalar_attr_from_double", &pd::OpDesc::SetScalarAttr<double>)
+      .def("_set_scalar_attr_from_complex128",
+           &pd::OpDesc::SetScalarAttr<std::complex<double>>)
+      .def("_set_scalars_attr_from_bools", &pd::OpDesc::SetScalarsAttr<bool>)
+      .def("_set_scalars_attr_from_int64s",
+           &pd::OpDesc::SetScalarsAttr<int64_t>)
+      .def("_set_scalars_attr_from_doubles",
+           &pd::OpDesc::SetScalarsAttr<double>)
+      .def("_set_scalars_attr_from_complex128s",
+           &pd::OpDesc::SetScalarsAttr<std::complex<double>>)
 
       .def(
           "attr",
@@ -417,6 +454,17 @@ void BindOpDesc(pybind11::module *m) {
                     pybind11::return_value_policy::reference)
       .def("inputs", [](pd::OpDesc &self) { return self.Inputs(); })
       .def("outputs", &pd::OpDesc::Outputs);
+
+  pybind11::class_<paddle::experimental::Scalar> scalar(*m, "Scalar", "");
+  scalar
+      .def(
+          "__init__",
+          [](paddle::experimental::Scalar &self) {
+            new (&self) paddle::experimental::Scalar();
+          },
+          pybind11::return_value_policy::reference)
+      .def("__str__", &paddle::experimental::Scalar::ToString)
+      .def("__repr__", &paddle::experimental::Scalar::ToString);
 }
 
 // Serialize Class Property

@@ -29,6 +29,20 @@ inline void CheckAndUpdateSliceAttrs(const DDim in_dims,
                                      std::vector<T>* ends,
                                      std::vector<int64_t>* steps = nullptr,
                                      std::vector<T>* infer_flags = nullptr) {
+  PADDLE_ENFORCE_EQ(starts->size(),
+                    ends->size(),
+                    phi::errors::InvalidArgument(
+                        "The size of starts and ends should be equal."
+                        "but received size of starts[%d] != size of ends[%d].",
+                        starts->size(),
+                        ends->size()));
+  PADDLE_ENFORCE_EQ(axes.size(),
+                    ends->size(),
+                    phi::errors::InvalidArgument(
+                        "The size of axes and ends should be equal."
+                        "but received size of axes[%d] != size of ends[%d].",
+                        axes.size(),
+                        ends->size()));
   for (size_t i = 0; i < axes.size(); ++i) {
     T axis = axes[i];
     PADDLE_ENFORCE_LT(

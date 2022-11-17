@@ -56,7 +56,9 @@ class FillAnyLikeOpMaker : public framework::OpProtoAndCheckerMaker {
   void Make() override {
     AddInput("X", "The input of fill-zeros-like op.");
     AddOutput("Out", "The variable will be filled up with specified value.");
-    AddAttr<float>("value", "The filled value").SetDefault(0.0);
+    // AddAttr<float>("value", "The filled value").SetDefault(0.0);
+    AddAttr<paddle::experimental::Scalar>("value", "The filled value")
+        .SetDefault(0.0);
     AddAttr<int>("dtype",
                  "Output tensor data type. default value is -1,"
                  "according to the input dtype.")

@@ -3342,7 +3342,31 @@ class Operator:
             return
 
         type_index = self._attr_types[name]
-        if type_index == core.AttrType.BOOL:
+        # if the required attribute is a SCALAR, pass as-is with
+        # respect to the type category, bool, integer, floating point, complex
+        if type_index == core.AttrType.SCALAR:
+            if isinstance(val, bool):
+                desc._set_scalar_attr_from_bool(name, val)
+            elif isinstance(val, int):
+                desc._set_scalar_attr_from_int64(name, val)
+            elif isinstance(val, float):
+                desc._set_scalar_attr_from_double(name, val)
+            elif isinstance(val, complex):
+                desc._set_scalar_attr_from_complex128(name, val)
+        elif type_index == core.AttrType.SCALARS:
+            if len(val) == 0:
+                desc._set_scalars_attr_from_doubles(name, val)
+            else:
+                val = np.array(val).tolist()
+                if isinstance(val[0], bool):
+                    desc._set_scalars_attr_from_bools(name, val)
+                elif isinstance(val[0], int):
+                    desc._set_scalars_attr_from_int64s(name, val)
+                elif isinstance(val[0], float):
+                    desc._set_scalars_attr_from_doubles(name, val)
+                elif isinstance(val[0], complex):
+                    desc._set_scalars_attr_from_complex128s(name, val)
+        elif type_index == core.AttrType.BOOL:
             desc._set_bool_attr(name, val)
         elif type_index == core.AttrType.INT:
             desc._set_int32_attr(name, val)
@@ -3350,8 +3374,8 @@ class Operator:
             desc._set_int64_attr(name, val)
         elif type_index == core.AttrType.FLOAT:
             desc._set_float32_attr(name, val)
-        # elif type_index == core.AttrType.FLOAT64:
-        #     desc._set_float64_attr(name, val)
+        elif type_index == core.AttrType.FLOAT64:
+            desc._set_float64_attr(name, val)
         elif type_index == core.AttrType.STRING:
             desc._set_str_attr(name, val)
         elif type_index == core.AttrType.BOOLS:

@@ -40,5 +40,6 @@ ScalarBase<phi::DenseTensor>::ScalarBase(const phi::DenseTensor& tensor_in)
   }
 }
 
+bool operator==(const Scalar& lhs, const Scalar& rhs) { return lhs == rhs; }
 }  // namespace experimental
 }  // namespace paddle

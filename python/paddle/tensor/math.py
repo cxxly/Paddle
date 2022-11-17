@@ -556,13 +556,31 @@ def _elementwise_op(helper):
     check_variable_and_dtype(
         x,
         'x',
-        ['float16', 'float32', 'float64', 'int32', 'int64', 'bool'],
+        [
+            'float16',
+            'float32',
+            'float64',
+            'int32',
+            'int64',
+            'bool',
+            'complex64',
+            'complex128',
+        ],
         original_op_type,
     )
     check_variable_and_dtype(
         y,
         'y',
-        ['float16', 'float32', 'float64', 'int32', 'int64', 'bool'],
+        [
+            'float16',
+            'float32',
+            'float64',
+            'int32',
+            'int64',
+            'bool',
+            'complex64',
+            'complex128',
+        ],
         original_op_type,
     )
 
