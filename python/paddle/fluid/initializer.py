@@ -1277,6 +1277,12 @@ class NumpyArrayInitializer(Initializer):
         elif out_dtype == VarDesc.VarType.INT32:
             value_name = "int32_values"
             values = [int(v) for v in np_value.flat]
+        elif out_dtype in (
+            VarDesc.VarType.COMPLEX64,
+            VarDesc.VarType.COMPLEX128,
+        ):
+            value_name = 'values'
+            values = [complex(v) for v in np_value.flat]
         else:
             raise ValueError("Unsupported dtype %s", self._value.dtype)
         if self._value.size > 1024 * 1024 * 1024:

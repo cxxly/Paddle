@@ -29,6 +29,16 @@
 
 namespace phi {
 
+template <typename T>
+inline HOSTDEVICE T norm(const T& v) {
+  return v * v;
+}
+
+template <typename T>
+inline HOSTDEVICE phi::dtype::complex<T> norm(const phi::dtype::complex<T>& v) {
+  return phi::dtype::complex<T>(v.real * v.real + v.imag * v.imag);
+}
+
 template <typename T, typename MT>
 __global__ void AdamKernelREG(MT beta1,
                               MT beta2,
@@ -58,7 +68,7 @@ __global__ void AdamKernelREG(MT beta1,
     MT mom1 = static_cast<MT>(moment1[id]);
     MT mom2 = static_cast<MT>(moment2[id]);
     mom1 = beta1 * mom1 + (static_cast<MT>(1.0) - beta1) * g;
-    mom2 = beta2 * mom2 + (static_cast<MT>(1.0) - beta2) * g * g;
+    mom2 = beta2 * mom2 + (static_cast<MT>(1.0) - beta2) * norm<MT>(g);
 
     MT denom = (sqrt(mom2) / sqrt(static_cast<MT>(1.0) - beta2_pow)) + epsilon;
     p += (mom1 / denom) * (-(lr / (static_cast<MT>(1.0) - beta1_pow)));
@@ -101,7 +111,7 @@ __global__ void AdamKernelMEM(MT beta1,
     MT mom1 = static_cast<MT>(moment1[id]);
     MT mom2 = static_cast<MT>(moment2[id]);
     mom1 = beta1 * mom1 + (static_cast<MT>(1.0) - beta1) * g;
-    mom2 = beta2 * mom2 + (static_cast<MT>(1.0) - beta2) * g * g;
+    mom2 = beta2 * mom2 + (static_cast<MT>(1.0) - beta2) * norm<MT>(g);
 
     MT denom = (sqrt(mom2) / sqrt(static_cast<MT>(1.0) - beta2_pow)) + epsilon;
     p += (mom1 / denom) * (-(lr / (static_cast<MT>(1.0) - beta1_pow)));
@@ -373,7 +383,9 @@ PD_REGISTER_KERNEL(adam,
                    float,
                    double,
                    phi::dtype::float16,
-                   phi::dtype::bfloat16) {
+                   phi::dtype::bfloat16,
+                   phi::dtype::complex<float>,
+                   phi::dtype::complex<double>) {
   // Skip beta1_pow, beta2_pow, skip_update data transform
   kernel->InputAt(5).SetBackend(phi::Backend::ALL_BACKEND);
   kernel->InputAt(6).SetBackend(phi::Backend::ALL_BACKEND);

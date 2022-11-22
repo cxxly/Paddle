@@ -1064,6 +1064,14 @@ def rand(shape, dtype=None, name=None):
             # [[0.22920267, 0.841956  , 0.05981819],  # random
             #  [0.4836288 , 0.24573246, 0.7516129 ]]  # random
     """
+    if dtype == paddle.complex64 or dtype == 'complex32':
+        return uniform(
+            shape, paddle.float32, min=0.0, max=1.0, name=name
+        ) + 1j * uniform(shape, paddle.float32, min=0.0, max=1.0, name=name)
+    if dtype == paddle.complex128 or dtype == 'complex128':
+        return uniform(
+            shape, paddle.float64, min=0.0, max=1.0, name=name
+        ) + 1j * uniform(shape, paddle.float64, min=0.0, max=1.0, name=name)
     return uniform(shape, dtype, min=0.0, max=1.0, name=name)
 
 

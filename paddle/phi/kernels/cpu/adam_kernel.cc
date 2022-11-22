@@ -270,8 +270,14 @@ void MergedAdamKernel(
 
 }  // namespace phi
 
-PD_REGISTER_KERNEL(adam, CPU, ALL_LAYOUT, phi::AdamDenseKernel, float, double) {
-}
+PD_REGISTER_KERNEL(adam,
+                   CPU,
+                   ALL_LAYOUT,
+                   phi::AdamDenseKernel,
+                   float,
+                   double,
+                   paddle::phi::complex<float>,
+                   paddle::phi::complex<double>) {}
 
 PD_REGISTER_KERNEL(
     merged_adam, CPU, ALL_LAYOUT, phi::MergedAdamKernel, float, double) {}
