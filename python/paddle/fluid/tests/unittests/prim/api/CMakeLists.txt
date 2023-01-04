@@ -9,5 +9,5 @@ foreach(TEST_OP ${TEST_OPS})
   py_test_modules(${TEST_OP} MODULES ${TEST_OP} ENVS ${GC_ENVS})
 endforeach()
 
-add_subdirectory(comp)
+add_subdirectory(backward)
 add_subdirectory(prim)

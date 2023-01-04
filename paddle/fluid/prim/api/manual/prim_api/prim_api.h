@@ -18,6 +18,7 @@
 namespace paddle {
 namespace prim {
 using Tensor = paddle::experimental::Tensor;
+using DataType = paddle::experimental::DataType;
 
 template <typename T>
 Tensor pow(const Tensor& x, const paddle::experimental::Scalar& y);
@@ -31,5 +32,7 @@ Tensor scale(const Tensor& X,
 template <typename T>
 Tensor multiply(const Tensor& x, const Tensor& y);
 
+template <typename T>
+Tensor cast(const Tensor& x, DataType dtype);
 }  // namespace prim
 }  // namespace paddle

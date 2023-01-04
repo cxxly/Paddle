@@ -29,13 +29,22 @@ from paddle.fluid import core, framework
         'fwd_type',
         'inputs',
         'outputs',
+        'attrs',
         'no_grad_var',
         'grad_sub_block',
         'desired_ops',
     ),
     (
-        ('tanh', {'X': ['x']}, {'Out': ['y']}, set(), tuple(), ('tanh_grad',)),
-        ('empty', {}, {'Out': ['y']}, set(), tuple(), tuple()),
+        (
+            'tanh',
+            {'X': ['x']},
+            {'Out': ['y']},
+            {},
+            set(),
+            tuple(),
+            ('tanh_grad',),
+        ),
+        ('empty', {}, {'Out': ['y']}, {}, set(), tuple(), tuple()),
     ),
 )
 class TestGetGradOpDescPrimEnabled(unittest.TestCase):
@@ -53,6 +62,7 @@ class TestGetGradOpDescPrimEnabled(unittest.TestCase):
                 n: [block.create_var(name=v, stop_gradient=False) for v in vs]
                 for n, vs in cls.outputs.items()
             },
+            attrs=cls.attrs,
         )
         cls.fwd = block.ops[0].desc
 

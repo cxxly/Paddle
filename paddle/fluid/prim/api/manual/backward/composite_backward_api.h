@@ -27,5 +27,11 @@ void tanh_grad(const Tensor& out, const Tensor& grad_out, Tensor* grad_x) {
   auto grad_x_tmp = multiply<T>(grad_out, tmp);
   grad_x->set_impl(grad_x_tmp.impl());
 }
+
+template <typename T>
+void cast_grad(const Tensor& out_grad, DataType dtype, Tensor* x_grad) {
+  x_grad->set_impl(cast<T>(out_grad, dtype).impl());
+}
+
 }  // namespace prim
 }  // namespace paddle
