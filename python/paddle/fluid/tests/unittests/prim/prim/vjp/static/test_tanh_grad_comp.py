@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import unittest
 
 from paddle.fluid import core
@@ -60,7 +61,7 @@ class TestTanhGradComp(unittest.TestCase):
             return exe.run(
                 program=mp,
                 feed={'primal': primal, 'cotangent': cotangent},
-                fetch_list=mp.blocks[0].ops[-1].output('Out')[0],
+                fetch_list=mp.blocks[0].ops[-1].output('Out'),
             )[0]
 
         def desired(primal, cotangent):
