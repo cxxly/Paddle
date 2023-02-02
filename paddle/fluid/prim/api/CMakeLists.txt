@@ -3,6 +3,12 @@ add_subdirectory(manual_prim)
 add_subdirectory(generated_prim)
 
 if(NOT (NOT WITH_PYTHON AND ON_INFER))
+  cc_library(eager_prim_api DEPS generated_eager_prim_api manual_eager_prim_api)
+endif()
+cc_library(static_prim_api DEPS generated_static_prim_api
+                                manual_static_prim_api)
+
+if(NOT (NOT WITH_PYTHON AND ON_INFER))
   cc_library(
     prim_api
     SRCS all.cc

@@ -1,0 +1,18 @@
+# - unsqueeze
+# - pow
+# - exp
+# - scale
+# - multiply
+# - matmul
+# - expand
+# - divide
+# - sum
+# - reshape
+# - stack
+# - expand_as
+# - add
+# - split
+# - mode
+# - coalesce_tensor
+# - expand_as
+- merged_adam_
