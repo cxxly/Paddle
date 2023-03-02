@@ -647,6 +647,7 @@ class PartialProgramLayer:
         if targets:
             # TODO(CZ): later when use cinn, set_prim_all_enabled and check_and_set_prim_all_enabled will be set at else branch.
             core.check_and_set_prim_all_enabled()
+            start_idx = len(program.block(0).ops) + len(self._outputs.tolist())
             backward.gradients(targets=targets, inputs=[])
 
             if self._hooker:
@@ -654,11 +655,10 @@ class PartialProgramLayer:
                     self, program, start_idx
                 )
             self.prepare_gradient_aggregation(start_idx, main_program, program)
+
         self._forward_end_index_map[
             _hash_with_id(program, self)
         ] = start_idx - len(self._outputs.tolist())
-        # TODO: prim make this complicate
-
         return program
 
     def _prune_unused_params(self, program):
